@@ -23,13 +23,13 @@ client.on('messageCreate', async (message) => {
     const query = message.content.split(' ').slice(1).join(' ');
 
     if (!query) {
-        return message.reply('❌ حط رابط أو اسم');
+        return message.reply('❌ اكتب اسم الأغنية أو الرابط');
     }
 
     const channel = message.member.voice.channel;
 
     if (!channel) {
-        return message.reply('❌ ادخل روم صوتي');
+        return message.reply('❌ لازم تدخل روم صوتي');
     }
 
     try {
@@ -39,7 +39,8 @@ client.on('messageCreate', async (message) => {
             adapterCreator: channel.guild.voiceAdapterCreator,
         });
 
-        const stream = await play.stream(query);
+        // 🔥 الحل النهائي (بدون search مشاكل)
+        const stream = await play.stream(`ytsearch:${query}`);
 
         const resource = createAudioResource(stream.stream, {
             inputType: stream.type
@@ -49,7 +50,7 @@ client.on('messageCreate', async (message) => {
         player.play(resource);
         connection.subscribe(player);
 
-        message.reply('🎶 شغلت');
+        message.reply('🎶 تم التشغيل');
 
     } catch (err) {
         console.log(err);
