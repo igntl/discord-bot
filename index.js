@@ -13,7 +13,6 @@ const client = new Client({
 const TOKEN = process.env.TOKEN;
 const CLIENT_ID = process.env.CLIENT_ID;
 const GUILD_ID = process.env.GUILD_ID;
-const CHANNEL_ID = process.env.VOICE_CHANNEL_ID;
 
 let player = createAudioPlayer();
 let connection;
@@ -54,18 +53,6 @@ client.once('ready', async () => {
   } catch (err) {
     console.log("❌ Error registering commands:", err);
   }
-
-  // 🔊 دخول الروم تلقائي
-  const guild = client.guilds.cache.get(GUILD_ID);
-  const channel = guild.channels.cache.get(CHANNEL_ID);
-
-  connection = joinVoiceChannel({
-    channelId: channel.id,
-    guildId: guild.id,
-    adapterCreator: guild.voiceAdapterCreator,
-  });
-
-  connection.subscribe(player);
 });
 
 // 🎵 الأوامر
@@ -75,21 +62,40 @@ client.on('interactionCreate', async (interaction) => {
   if (interaction.commandName === 'play') {
     const query = interaction.options.getString('query');
 
+    const channel = interaction.member.voice.channel;
+
+    if (!channel) {
+      return interaction.reply('❌ ادخل روم صوتي أول');
+    }
+
+    connection = joinVoiceChannel({
+      channelId: channel.id,
+      guildId: channel.guild.id,
+      adapterCreator: channel.guild.voiceAdapterCreator,
+    });
+
+    connection.subscribe(player);
+
     await interaction.reply('🔎 جاري البحث...');
 
     try {
       const result = await play.search(query, { limit: 1 });
-      if (!result.length) return interaction.followUp('❌ ما لقيت شيء');
 
-      const stream = await play.stream(result[0].url);
+      if (!result.length) {
+        return interaction.followUp('❌ ما لقيت شيء');
+      }
 
-      const resource = createAudioResource(stream.stream, {
-        inputType: stream.type
+      const stream = await play.stream(result[0].url, {
+        discordPlayerCompatibility: true,
+        quality: 2
       });
+
+      const resource = createAudioResource(stream.stream);
 
       player.play(resource);
 
       interaction.followUp(`🎶 شغّلت: ${result[0].title}`);
+
     } catch (err) {
       console.log(err);
       interaction.followUp('❌ صار خطأ');
