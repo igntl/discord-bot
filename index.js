@@ -1,7 +1,7 @@
 const { Client, GatewayIntentBits, SlashCommandBuilder, Routes } = require('discord.js');
 const { joinVoiceChannel, createAudioPlayer, createAudioResource } = require('@discordjs/voice');
 const { REST } = require('@discordjs/rest');
-const play = require('play-dl');
+const { spawn } = require('child_process');
 
 const client = new Client({
   intents: [
@@ -21,10 +21,10 @@ let connection;
 const commands = [
   new SlashCommandBuilder()
     .setName('play')
-    .setDescription('تشغيل أغنية')
+    .setDescription('تشغيل رابط')
     .addStringOption(option =>
-      option.setName('query')
-        .setDescription('اسم أو رابط')
+      option.setName('url')
+        .setDescription('رابط يوتيوب')
         .setRequired(true)
     ),
 
@@ -37,9 +37,9 @@ const commands = [
     .setDescription('تخطي')
 ].map(cmd => cmd.toJSON());
 
+// تسجيل الأوامر
 const rest = new REST({ version: '10' }).setToken(TOKEN);
 
-// 🚀 عند تشغيل البوت
 client.once('ready', async () => {
   console.log(`🚀 Bot Ready: ${client.user.tag}`);
 
@@ -51,17 +51,16 @@ client.once('ready', async () => {
 
     console.log("✅ Commands Registered");
   } catch (err) {
-    console.log("❌ Error registering commands:", err);
+    console.log(err);
   }
 });
 
-// 🎵 الأوامر
+// 🎵 التشغيل
 client.on('interactionCreate', async (interaction) => {
   if (!interaction.isChatInputCommand()) return;
 
   if (interaction.commandName === 'play') {
-    const query = interaction.options.getString('query');
-
+    const url = interaction.options.getString('url');
     const channel = interaction.member.voice.channel;
 
     if (!channel) {
@@ -76,26 +75,20 @@ client.on('interactionCreate', async (interaction) => {
 
     connection.subscribe(player);
 
-    await interaction.reply('🔎 جاري البحث...');
+    await interaction.reply('🔎 جاري التشغيل...');
 
     try {
-      const result = await play.search(query, { limit: 1 });
+      const stream = spawn('yt-dlp', [
+        '-f', 'bestaudio',
+        '-o', '-',
+        url
+      ]);
 
-      if (!result.length) {
-        return interaction.followUp('❌ ما لقيت شيء');
-      }
-
-      const stream = await play.stream(result[0].url, {
-        discordPlayerCompatibility: true,
-        quality: 2
-      });
-
-      const resource = createAudioResource(stream.stream);
+      const resource = createAudioResource(stream.stdout);
 
       player.play(resource);
 
-      interaction.followUp(`🎶 شغّلت: ${result[0].title}`);
-
+      interaction.followUp(`🎶 شغّلت الرابط`);
     } catch (err) {
       console.log(err);
       interaction.followUp('❌ صار خطأ');
@@ -104,12 +97,12 @@ client.on('interactionCreate', async (interaction) => {
 
   if (interaction.commandName === 'stop') {
     player.stop();
-    await interaction.reply('⏹️ تم الإيقاف');
+    interaction.reply('⏹️ تم الإيقاف');
   }
 
   if (interaction.commandName === 'skip') {
     player.stop();
-    await interaction.reply('⏭️ تم التخطي');
+    interaction.reply('⏭️ تم التخطي');
   }
 });
 
