@@ -1,6 +1,7 @@
 const { Client, GatewayIntentBits } = require('discord.js');
 const { joinVoiceChannel, createAudioPlayer, createAudioResource } = require('@discordjs/voice');
 const play = require('play-dl');
+const ffmpeg = require('ffmpeg-static');
 
 const client = new Client({
     intents: [
@@ -39,12 +40,15 @@ client.on('messageCreate', async (message) => {
             adapterCreator: channel.guild.voiceAdapterCreator,
         });
 
-        // 🔥 الحل النهائي (بدون undefined نهائي)
+        // 🔥 الحل النهائي (بدون undefined)
         const stream = await play.stream(`ytsearch:${query}`);
 
         const resource = createAudioResource(stream.stream, {
-            inputType: stream.type
+            inputType: stream.type,
+            inlineVolume: true
         });
+
+        resource.volume.setVolume(1);
 
         const player = createAudioPlayer();
         player.play(resource);
