@@ -1,6 +1,5 @@
 const { Client, GatewayIntentBits } = require('discord.js');
-const { joinVoiceChannel, createAudioPlayer, createAudioResource } = require('@discordjs/voice');
-const ytdl = require('ytdl-core');
+const { joinVoiceChannel } = require('@discordjs/voice');
 
 const client = new Client({
     intents: [
@@ -11,44 +10,32 @@ const client = new Client({
     ]
 });
 
-client.once('ready', () => {
+const TOKEN = process.env.TOKEN;
+const VOICE_CHANNEL_ID = process.env.VOICE_CHANNEL_ID; // حطه في Railway
+
+client.once('ready', async () => {
     console.log(`✅ Ready: ${client.user.tag}`);
-});
-
-client.on('messageCreate', async (message) => {
-    if (!message.content.startsWith('!play')) return;
-
-    const url = message.content.split(' ')[1];
-
-    if (!url) return message.reply('❌ حط رابط');
-
-    const channel = message.member.voice.channel;
-    if (!channel) return message.reply('❌ ادخل روم صوتي');
 
     try {
-        const connection = joinVoiceChannel({
-            channelId: channel.id,
-            guildId: channel.guild.id,
-            adapterCreator: channel.guild.voiceAdapterCreator,
+        const guilds = client.guilds.cache;
+
+        guilds.forEach(guild => {
+            const channel = guild.channels.cache.get(VOICE_CHANNEL_ID);
+
+            if (!channel) return;
+
+            joinVoiceChannel({
+                channelId: channel.id,
+                guildId: guild.id,
+                adapterCreator: guild.voiceAdapterCreator,
+            });
+
+            console.log('🔊 دخل الروم الصوتي');
         });
-
-        const stream = ytdl(url, {
-            filter: 'audioonly',
-            highWaterMark: 1 << 25
-        });
-
-        const resource = createAudioResource(stream);
-        const player = createAudioPlayer();
-
-        player.play(resource);
-        connection.subscribe(player);
-
-        message.reply('🎶 شغلت');
 
     } catch (err) {
         console.log(err);
-        message.reply('❌ صار خطأ');
     }
 });
 
-client.login(process.env.TOKEN);
+client.login(TOKEN);
