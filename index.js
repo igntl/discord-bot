@@ -11,10 +11,14 @@ const client = new Client({
 
 const player = new Player(client);
 
-// تحميل الاكستراكتورز
+// تحميل الاكستراكتورز (مهم)
 (async () => {
     await player.extractors.loadDefault();
 })();
+
+const TOKEN = process.env.TOKEN;
+const CLIENT_ID = process.env.CLIENT_ID;
+const GUILD_ID = process.env.GUILD_ID;
 
 // أمر play
 const commands = [
@@ -28,19 +32,16 @@ const commands = [
         )
 ].map(cmd => cmd.toJSON());
 
-// تسجيل الأوامر (الوضع الطبيعي)
-const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
+const rest = new REST({ version: '10' }).setToken(TOKEN);
 
+// تسجيل الأوامر (سريع)
 (async () => {
     try {
         console.log('⏳ تسجيل الأوامر...');
 
         await rest.put(
-            Routes.applicationGuildCommands(
-                process.env.CLIENT_ID,
-                process.env.GUILD_ID
-            ),
-            { body: commands } // ✅ رجعناه طبيعي
+            Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID),
+            { body: commands }
         );
 
         console.log('✅ تم تسجيل الأوامر');
@@ -54,31 +55,40 @@ client.once('ready', () => {
     console.log(`✅ Ready: ${client.user.tag}`);
 });
 
-// تشغيل الأمر
+// تشغيل
 client.on('interactionCreate', async (interaction) => {
     if (!interaction.isChatInputCommand()) return;
 
     if (interaction.commandName === 'play') {
+
         const query = interaction.options.getString('song');
 
-        if (!interaction.member.voice.channel) {
+        if (!query) {
+            return interaction.reply('❌ اكتب اسم الأغنية');
+        }
+
+        const channel = interaction.member.voice.channel;
+
+        if (!channel) {
             return interaction.reply('❌ لازم تدخل روم صوتي');
         }
 
         await interaction.deferReply();
 
         try {
-            const { track } = await player.play(
-                interaction.member.voice.channel,
-                query,
-                {
-                    nodeOptions: {
-                        metadata: interaction
-                    }
+            const result = await player.play(channel, query, {
+                searchEngine: "youtube", // 🔥 هذا أهم سطر
+                nodeOptions: {
+                    metadata: interaction
                 }
-            );
+            });
 
-            return interaction.followUp(`🎶 شغلت: ${track.title}`);
+            if (!result || !result.track) {
+                return interaction.followUp('❌ ما لقيت شيء');
+            }
+
+            return interaction.followUp(`🎶 شغلت: ${result.track.title}`);
+
         } catch (err) {
             console.log(err);
             return interaction.followUp('❌ صار خطأ');
@@ -86,4 +96,4 @@ client.on('interactionCreate', async (interaction) => {
     }
 });
 
-client.login(process.env.TOKEN);
+client.login(TOKEN);
