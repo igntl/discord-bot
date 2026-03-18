@@ -28,7 +28,7 @@ const commands = [
         )
 ].map(cmd => cmd.toJSON());
 
-// تسجيل الأوامر (سيرفر = سريع)
+// تسجيل الأوامر (الوضع الطبيعي)
 const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
 
 (async () => {
@@ -36,12 +36,12 @@ const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
         console.log('⏳ تسجيل الأوامر...');
 
         await rest.put(
-    Routes.applicationGuildCommands(
-        process.env.CLIENT_ID,
-        process.env.GUILD_ID
-    ),
-    { body: [] } // 👈 هذا يمسح كل الأوامر
-);
+            Routes.applicationGuildCommands(
+                process.env.CLIENT_ID,
+                process.env.GUILD_ID
+            ),
+            { body: commands } // ✅ رجعناه طبيعي
+        );
 
         console.log('✅ تم تسجيل الأوامر');
     } catch (error) {
