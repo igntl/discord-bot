@@ -37,8 +37,12 @@ const commands = [
 
 const rest = new REST({ version: '10' }).setToken(TOKEN);
 
+// 🚀 تشغيل البوت
 client.once('ready', async () => {
   console.log(`🚀 Ready: ${client.user.tag}`);
+
+  // 🔥 هذا أهم سطر (حل المشكلة)
+  await player.extractors.loadDefault();
 
   await rest.put(
     Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID),
@@ -48,6 +52,7 @@ client.once('ready', async () => {
   console.log("✅ Commands Registered");
 });
 
+// 🎵 الأوامر
 client.on('interactionCreate', async (interaction) => {
   if (!interaction.isChatInputCommand()) return;
 
