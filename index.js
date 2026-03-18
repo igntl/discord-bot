@@ -1,5 +1,5 @@
 const { Client, GatewayIntentBits, SlashCommandBuilder, Routes } = require('discord.js');
-const { joinVoiceChannel, createAudioPlayer, createAudioResource } = require('@discordjs/voice');
+const { joinVoiceChannel, createAudioPlayer, createAudioResource, StreamType } = require('@discordjs/voice');
 const { REST } = require('@discordjs/rest');
 const { spawn } = require('child_process');
 
@@ -37,25 +37,21 @@ const commands = [
     .setDescription('تخطي')
 ].map(cmd => cmd.toJSON());
 
-// تسجيل الأوامر
 const rest = new REST({ version: '10' }).setToken(TOKEN);
 
+// 🚀 تشغيل البوت
 client.once('ready', async () => {
   console.log(`🚀 Bot Ready: ${client.user.tag}`);
 
-  try {
-    await rest.put(
-      Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID),
-      { body: commands }
-    );
+  await rest.put(
+    Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID),
+    { body: commands }
+  );
 
-    console.log("✅ Commands Registered");
-  } catch (err) {
-    console.log(err);
-  }
+  console.log("✅ Commands Registered");
 });
 
-// 🎵 التشغيل
+// 🎵 الأوامر
 client.on('interactionCreate', async (interaction) => {
   if (!interaction.isChatInputCommand()) return;
 
@@ -81,14 +77,19 @@ client.on('interactionCreate', async (interaction) => {
       const stream = spawn('yt-dlp', [
         '-f', 'bestaudio',
         '-o', '-',
+        '--no-playlist',
+        '--quiet',
         url
       ]);
 
-      const resource = createAudioResource(stream.stdout);
+      const resource = createAudioResource(stream.stdout, {
+        inputType: StreamType.Arbitrary
+      });
 
       player.play(resource);
 
-      interaction.followUp(`🎶 شغّلت الرابط`);
+      interaction.followUp('🎶 تم التشغيل');
+
     } catch (err) {
       console.log(err);
       interaction.followUp('❌ صار خطأ');
