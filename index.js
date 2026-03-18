@@ -16,7 +16,7 @@ const player = new Player(client);
     await player.extractors.loadDefault();
 })();
 
-// تسجيل أمر /play
+// أمر play
 const commands = [
     new SlashCommandBuilder()
         .setName('play')
@@ -28,7 +28,7 @@ const commands = [
         )
 ].map(cmd => cmd.toJSON());
 
-// تسجيل الأوامر في ديسكورد
+// تسجيل الأوامر (سيرفر = سريع)
 const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
 
 (async () => {
@@ -36,9 +36,12 @@ const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
         console.log('⏳ تسجيل الأوامر...');
 
         await rest.put(
-            Routes.applicationCommands(process.env.CLIENT_ID),
-            { body: commands }
-        );
+    Routes.applicationGuildCommands(
+        process.env.CLIENT_ID,
+        process.env.GUILD_ID
+    ),
+    { body: [] } // 👈 هذا يمسح كل الأوامر
+);
 
         console.log('✅ تم تسجيل الأوامر');
     } catch (error) {
@@ -46,21 +49,17 @@ const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
     }
 })();
 
-// عند تشغيل البوت
+// جاهز
 client.once('ready', () => {
     console.log(`✅ Ready: ${client.user.tag}`);
 });
 
-// استقبال الأوامر
+// تشغيل الأمر
 client.on('interactionCreate', async (interaction) => {
     if (!interaction.isChatInputCommand()) return;
 
     if (interaction.commandName === 'play') {
-        const query = interaction.options.get('song')?.value;
-
-        if (!query) {
-            return interaction.reply('❌ اكتب اسم الأغنية');
-        }
+        const query = interaction.options.getString('song');
 
         if (!interaction.member.voice.channel) {
             return interaction.reply('❌ لازم تدخل روم صوتي');
@@ -69,11 +68,15 @@ client.on('interactionCreate', async (interaction) => {
         await interaction.deferReply();
 
         try {
-            const { track } = await player.play(interaction.member.voice.channel, query, {
-                nodeOptions: {
-                    metadata: interaction
+            const { track } = await player.play(
+                interaction.member.voice.channel,
+                query,
+                {
+                    nodeOptions: {
+                        metadata: interaction
+                    }
                 }
-            });
+            );
 
             return interaction.followUp(`🎶 شغلت: ${track.title}`);
         } catch (err) {
@@ -83,5 +86,4 @@ client.on('interactionCreate', async (interaction) => {
     }
 });
 
-// تشغيل البوت
 client.login(process.env.TOKEN);
