@@ -41,8 +41,9 @@ const rest = new REST({ version: '10' }).setToken(TOKEN);
 client.once('ready', async () => {
   console.log(`🚀 Ready: ${client.user.tag}`);
 
-  // 🔥 هذا أهم سطر (حل المشكلة)
-  await player.extractors.loadDefault();
+  // تحميل مصادر الصوت (مهم)
+  const { DefaultExtractors } = require('@discord-player/extractor');
+  await player.extractors.loadMulti(DefaultExtractors);
 
   await rest.put(
     Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID),
@@ -69,6 +70,7 @@ client.on('interactionCreate', async (interaction) => {
 
     try {
       await player.play(channel, query, {
+        searchEngine: "youtube", // 🔥 هذا حل مشكلتك
         nodeOptions: {
           metadata: interaction
         }
