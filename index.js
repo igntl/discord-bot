@@ -1,7 +1,6 @@
 const { Client, GatewayIntentBits } = require('discord.js');
 const { joinVoiceChannel, createAudioPlayer, createAudioResource } = require('@discordjs/voice');
-const play = require('play-dl');
-const ffmpeg = require('ffmpeg-static');
+const ytdl = require('ytdl-core');
 
 const client = new Client({
     intents: [
@@ -12,8 +11,6 @@ const client = new Client({
     ]
 });
 
-const TOKEN = process.env.TOKEN;
-
 client.once('ready', () => {
     console.log(`✅ Ready: ${client.user.tag}`);
 });
@@ -21,17 +18,12 @@ client.once('ready', () => {
 client.on('messageCreate', async (message) => {
     if (!message.content.startsWith('!play')) return;
 
-    const query = message.content.split(' ').slice(1).join(' ');
+    const url = message.content.split(' ')[1];
 
-    if (!query) {
-        return message.reply('❌ اكتب اسم الأغنية');
-    }
+    if (!url) return message.reply('❌ حط رابط');
 
     const channel = message.member.voice.channel;
-
-    if (!channel) {
-        return message.reply('❌ ادخل روم صوتي');
-    }
+    if (!channel) return message.reply('❌ ادخل روم صوتي');
 
     try {
         const connection = joinVoiceChannel({
@@ -40,21 +32,18 @@ client.on('messageCreate', async (message) => {
             adapterCreator: channel.guild.voiceAdapterCreator,
         });
 
-        // 🔥 الحل النهائي (بدون undefined)
-        const stream = await play.stream(`ytsearch:${query}`);
-
-        const resource = createAudioResource(stream.stream, {
-            inputType: stream.type,
-            inlineVolume: true
+        const stream = ytdl(url, {
+            filter: 'audioonly',
+            highWaterMark: 1 << 25
         });
 
-        resource.volume.setVolume(1);
-
+        const resource = createAudioResource(stream);
         const player = createAudioPlayer();
+
         player.play(resource);
         connection.subscribe(player);
 
-        message.reply('🎶 تم التشغيل');
+        message.reply('🎶 شغلت');
 
     } catch (err) {
         console.log(err);
@@ -62,4 +51,4 @@ client.on('messageCreate', async (message) => {
     }
 });
 
-client.login(TOKEN);
+client.login(process.env.TOKEN);
