@@ -14,7 +14,7 @@ const TOKEN = process.env.TOKEN;
 const VOICE_CHANNEL_ID = process.env.VOICE_CHANNEL_ID;
 
 // 🔥 حط هنا Client ID حق البوت
-const CLIENT_ID = "حط_هنا_ايدي_البوت";
+const CLIENT_ID = "1483263033881923716";
 
 // 🔥 تسجيل أمر /ping
 const commands = [
